@@ -11,9 +11,9 @@ import javax.swing.JOptionPane;
 
 
 public class Processing {
-	
+
 	// Detects which operating system SpeedMatch is running on
-	
+
 	public static String detectOS() {
 		String os = System.getProperty("os.name").toLowerCase();
 		if(os.contains("win")) {
@@ -26,9 +26,9 @@ public class Processing {
 			return "other";
 		}
 	}
-	
+
 	// Returns the working directory of the program in system-specific formatting
-	
+
 	public static String getHomeDir() {
 		char sep = '/';
 		if(detectOS().equals("Windows")) {
@@ -36,9 +36,9 @@ public class Processing {
 		}
 		return System.getProperty("user.home")+ sep+"SpeedMatch"+sep;
 	}
-	
+
 	// Get system-specific Line separator
-	
+
 	public static String getLineSep() {
 		String newline = "\n";
 		if(detectOS().equals("Windows")) {
@@ -46,10 +46,10 @@ public class Processing {
 		}
 		return newline;
 	}
-	
+
 	// Serializes a Dating-Object and writes it to a .sdo file in a given
 	// directory
-	
+
 	public static void saveDating(Dating d, String dir) throws MatchException {
 		String outdir = dir + d.getName() + ".sdo";
 		File outfile = new File(outdir);
@@ -65,9 +65,9 @@ public class Processing {
 			e.printStackTrace();
 		}
 	}
-	
+
 	// OVERRIDE: Same as above but using default directory
-	
+
 	public static void saveDating(Dating d) throws MatchException {
 		String outdir = getHomeDir() + d.getName() + ".sdo";
 		File outfile = new File(outdir);
@@ -83,9 +83,9 @@ public class Processing {
 			JOptionPane.showMessageDialog(null, "Error: "+e.getMessage(),"ERROR", JOptionPane.ERROR_MESSAGE);
 		}
 	}
-	
+
 	// Reads saved dating from disk
-	
+
 	public static Dating readDating(String path) throws MatchException{
 		File infile = new File(path);
 		if(infile.isDirectory()) {
@@ -106,7 +106,7 @@ public class Processing {
 			return null;
 		}
 	}
-	
+
 	// Same as above, but using default directory
 	public static Dating readDatingFromWD(String filename) throws MatchException{
 		String indir = getHomeDir() + filename;
@@ -129,9 +129,9 @@ public class Processing {
 			return null;
 		}
 	}
-	
+
 	// Returns an array containing the Names of .sdo-files in a specific directory
-	
+
 	public static String[] getDatingsDir(String path) throws IOException {
 		File dir = new File(path);
 		if(dir.isDirectory()) {
@@ -145,11 +145,33 @@ public class Processing {
 			throw new IOException("Not a directory");
 		}
 	}
-	
+
 	// OVERRIDE: Same as above, but using default directory
-	
+
 	public static String[] getDatingsDir() throws IOException{
 		return getDatingsDir(getHomeDir());
+	}
+	
+	//Delete a file from directory
+	
+	public static void deleteFile (String path, String filename) {
+		File f = new File(path+filename);
+		if(f.exists()) {
+			try {
+				f.delete();
+			}catch(Exception e) {
+				JOptionPane.showMessageDialog(null, "An unknown error occured while deleting the file", "ERROR", JOptionPane.ERROR_MESSAGE);;
+			}
+		}
+		else {
+			JOptionPane.showMessageDialog(null, "Unable to access file. Please check read/write permissions", "ERROR", JOptionPane.ERROR_MESSAGE);;
+		}
+	}
+	
+	//OVERRIDE: Same as above, but using default directory
+	
+	public static void deleteFile(String filename) {
+		deleteFile(getHomeDir(),filename);
 	}
 
 }

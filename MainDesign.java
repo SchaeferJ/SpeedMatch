@@ -66,6 +66,12 @@ public class MainDesign extends JFrame {
 		eventPanel.add(newEvent);
 		JButton changeDir = new JButton("Change Directory");
 		eventPanel.add(changeDir);
+		JButton edit = new JButton("Edit");
+		eventPanel.add(edit);
+		edit.setEnabled(false);
+		JButton delete = new JButton("Delete");
+		eventPanel.add(delete);
+		delete.setEnabled(false);
 
 		// Action Listener for List
 
@@ -75,7 +81,8 @@ public class MainDesign extends JFrame {
 				if (e.getValueIsAdjusting() == false) {
 					lselect = list.getSelectedIndex();
 					next.setEnabled(true);
-
+					delete.setEnabled(true);
+					edit.setEnabled(true);
 				}
 			}
 		});
@@ -87,23 +94,23 @@ public class MainDesign extends JFrame {
 				final JFileChooser fc = new JFileChooser();
 				fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				//if (e.getSource() == changeDir) {
-					int returnVal = fc.showOpenDialog(MainDesign.this);
+				int returnVal = fc.showOpenDialog(MainDesign.this);
 
-					if (returnVal == JFileChooser.APPROVE_OPTION) {
-						File dirselect = fc.getSelectedFile();
-						dir = dirselect.getAbsolutePath();
-						char sep = '/';
-						if(Processing.detectOS().equals("Windows")) {
-							sep = '\\';
-						}
-						dir += sep;
-						dirchange = 1;
-						setArr(dir);
-						dlm.removeAllElements();
-						for(int i=0; i<eventarr.length; i++) {
-							dlm.addElement(eventarr[i].substring(0, (eventarr[i].length()-4)));
-						}
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File dirselect = fc.getSelectedFile();
+					dir = dirselect.getAbsolutePath();
+					char sep = '/';
+					if(Processing.detectOS().equals("Windows")) {
+						sep = '\\';
 					}
+					dir += sep;
+					dirchange = 1;
+					setArr(dir);
+					dlm.removeAllElements();
+					for(int i=0; i<eventarr.length; i++) {
+						dlm.addElement(eventarr[i].substring(0, (eventarr[i].length()-4)));
+					}
+				}
 				//}
 			}
 		});
@@ -142,6 +149,35 @@ public class MainDesign extends JFrame {
 				}catch(Exception ex) {
 					JOptionPane.showMessageDialog(MainDesign.this, ex.getMessage(), "ERROR while opening file", JOptionPane.ERROR_MESSAGE);
 				}
+			}
+		});
+
+		//ActionListener for Delete
+		delete.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {
+				int askdelete = JOptionPane.showConfirmDialog(MainDesign.this, "Are you sure you want to permanently delete "+eventarr[lselect]+"? This cannot be undone.", "Delete Speeddating", JOptionPane.INFORMATION_MESSAGE);
+				if(askdelete == JOptionPane.YES_OPTION) {
+					if(dirchange==0) {
+						Processing.deleteFile(eventarr[lselect]);
+					}
+					else {
+						Processing.deleteFile(dir,eventarr[lselect]);
+
+					}
+					setArr(dir);
+					dlm.removeAllElements();
+					for(int i=0; i<eventarr.length; i++) {
+						dlm.addElement(eventarr[i].substring(0, (eventarr[i].length()-4)));
+					}
+				}
+			}
+		});
+		
+		// ActionListener for Edit
+		edit.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				EditWindow ew = new EditWindow(eventarr[lselect],dir, dirchange);
+				ew.setVisible(true);
 			}
 		});
 
@@ -212,7 +248,7 @@ public class MainDesign extends JFrame {
 		frame.pack();
 		frame.setVisible(true);
 		frame.setTitle("SpeedDating - MatchFinder");
-		frame.setSize(800, 700);
+		//frame.setSize(800, 700);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 	}
