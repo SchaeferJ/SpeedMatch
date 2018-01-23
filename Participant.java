@@ -69,7 +69,8 @@ public class Participant implements java.io.Serializable{
 	}
 
 	public String getFullName(){
-		return this.f_name + " " +this.l_name;
+		String tmp = this.f_name + " " +this.l_name;
+		return tmp;
 	}
 
 	public int[] getMatches(){

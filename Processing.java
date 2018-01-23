@@ -26,15 +26,21 @@ public class Processing {
 			return "other";
 		}
 	}
-
-	// Returns the working directory of the program in system-specific formatting
-
-	public static String getHomeDir() {
+	
+	// Returns Path separator
+	
+	public static char getPathSep() {
 		char sep = '/';
 		if(detectOS().equals("Windows")) {
 			sep = '\\';
 		}
-		return System.getProperty("user.home")+ sep+"SpeedMatch"+sep;
+		return sep;
+	}
+
+	// Returns the working directory of the program in system-specific formatting
+
+	public static String getHomeDir() {
+		return System.getProperty("user.home")+ getPathSep()+"SpeedMatch"+getPathSep();
 	}
 
 	// Get system-specific Line separator
@@ -173,5 +179,6 @@ public class Processing {
 	public static void deleteFile(String filename) {
 		deleteFile(getHomeDir(),filename);
 	}
-
+	
+	// Writes a String to a file
 }

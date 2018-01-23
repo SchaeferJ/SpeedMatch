@@ -9,17 +9,19 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-public class ParticipantPage extends JFrame {
+public class NetPartPage extends JFrame {
 
-	protected Dating event;
-	private int dirchange;
-	private String dir;
+	private Dating event;
+	private String name;
+	private DBConnect data;
+	private String dir = System.getProperty("java.io.tmpdir") + Processing.getPathSep();
+	private boolean loaded = false;
+	private boolean discload = false;
 
-	public ParticipantPage(Dating evt, int dc, String dd) {
-
-		event = evt;
-		dirchange = dc;
-		dir = dd;
+	public NetPartPage(String n, DBConnect con) {
+		this.name = n;
+		this.data = con;
+		this.event = data.readDatingFromDB(n);
 		initGUI();
 	}
 
@@ -40,28 +42,43 @@ public class ParticipantPage extends JFrame {
 		subtitle.setForeground(new Color(250, 92, 92));
 		subtitle.setFont(new Font("Arial", Font.BOLD, 25));
 
-		// Seperator
+		// Separator
 		JSeparator sep = new JSeparator();
 		sep.setPreferredSize(new Dimension(500, 20));
+
+		// Labels
+		JLabel info;
+		if (!(event == null)) {
+			info = new JLabel("Successfully loaded " + event.getName() + ".");
+		} else {
+			info = new JLabel("ERROR! Please try again!");
+		}
+
+		info.setForeground(new Color(0, 0, 0));
+		info.setFont(new Font("Arial", Font.BOLD, 12));
 
 		// Buttons to add participants or likes
 		JPanel actionPanel = new JPanel();
 		actionPanel.setOpaque(false);
-		JButton addP = new JButton("Add Participant");
+		JButton addP = new JButton("Load Participants");
 		actionPanel.add(addP);
-		JButton likes = new JButton("Add Likes");
-		actionPanel.add(likes);
 		JButton lexport = new JButton("Open Participant List");
 		actionPanel.add(lexport);
+		JButton discmatch = new JButton("Show Discussion Groups");
+		actionPanel.add(discmatch);
+		JButton likes = new JButton("Add Likes");
+		actionPanel.add(likes);
 		JButton match = new JButton("Match!");
 		actionPanel.add(match);
 
 		// Buttons to change page or exit
 		JPanel pagePanel = new JPanel();
 		pagePanel.setOpaque(false);
-		JButton back = new JButton("< Back");
+		JButton back = new JButton("Back");
 		pagePanel.add(back);
-		JButton save = new JButton("Save");
+		JButton serversave = new JButton("Save to Server");
+		pagePanel.add(serversave);
+		JButton save = new JButton("Save to Computer");
 		pagePanel.add(save);
 		JButton exit = new JButton("Exit");
 		pagePanel.add(exit);
@@ -70,8 +87,8 @@ public class ParticipantPage extends JFrame {
 		// add Participant
 		addP.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				AddParticipant newPartPage = new AddParticipant(event, dirchange, dir);
-				newPartPage.initializeAddPart();
+				data.dbToEvent(event);
+				loaded = true;
 			}
 		});
 
@@ -79,18 +96,28 @@ public class ParticipantPage extends JFrame {
 		likes.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				AddLikes newLikePage = new AddLikes(event);
-				newLikePage.initializeLikes();
+				newLikePage.setVisible(true);
+				// newLikePage.initializeLikes();
+			}
+		});
+
+		// Discussion Groups
+		discmatch.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (!loaded || discload) {
+					data.dbToEvent(event);
+					loaded = true;
+					discload = true;
+				}
+				event.computeScores();
+				DiscussionMatching.outputDiscussionMatches(dir, event);
 			}
 		});
 
 		// match
 		ActionListener lm = new ActionListener() {
 			public void actionPerformed(ActionEvent evt) {
-				if (dirchange == 1) {
-					Matching.outputMatches(dir, event);
-				} else {
-					Matching.outputMatches(event);
-				}
+				Matching.outputMatches(dir, event);
 			}
 		};
 		match.addActionListener(lm);
@@ -100,17 +127,13 @@ public class ParticipantPage extends JFrame {
 			public void actionPerformed(ActionEvent evt) {
 				try {
 					File f;
-					if (dirchange == 1) {
-						f = new File(dir + event.getName() + "_list.txt");
-					} else {
-						f = new File(Processing.getHomeDir() + event.getName() + "_list.txt");
-					}
+					f = new File(dir + event.getName() + "_list.txt");
 					Desktop.getDesktop().open(f);
 				} catch (FileNotFoundException e) {
-					JOptionPane.showMessageDialog(ParticipantPage.this, "Error: You have to add Participants first",
+					JOptionPane.showMessageDialog(NetPartPage.this, "Error: You have to add Participants first",
 							"ERROR", JOptionPane.ERROR_MESSAGE);
 				} catch (Exception e2) {
-					JOptionPane.showMessageDialog(ParticipantPage.this, "Error: You have to add Participants first",
+					JOptionPane.showMessageDialog(NetPartPage.this, "Error: You have to add Participants first",
 							"ERROR", JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -119,33 +142,64 @@ public class ParticipantPage extends JFrame {
 		// Action Listener for exit
 		exit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				// setVisible(false);
-				dispose();
-
+				int exs = JOptionPane.showConfirmDialog(NetPartPage.this,
+						"Do you want to save your changes before exiting? Unsaved changes will be lost!", "Save",
+						JOptionPane.YES_NO_CANCEL_OPTION);
+				if (exs == JOptionPane.YES_OPTION) {
+					data.updateFile(event);
+					data.close();
+					dispose();
+				}
+				if (exs == JOptionPane.NO_OPTION) {
+					data.close();
+					dispose();
+				}
 			}
 		});
 
 		// Action Listener for back
+
 		back.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				ServerConfig sc = new ServerConfig(data);
+				sc.setVisible(true);
 				dispose();
-				MainDesign frame = new MainDesign();
+			}
+		});
+
+		// Action Listener for Save to Server
+
+		serversave.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					data.updateFile(event);
+					JOptionPane.showMessageDialog(NetPartPage.this, "Saved successfully", "Success",
+							JOptionPane.INFORMATION_MESSAGE);
+				} catch (Exception ex) {
+					JOptionPane.showMessageDialog(NetPartPage.this, ex.getMessage(), "ERROR",
+							JOptionPane.ERROR_MESSAGE);
+				}
 			}
 		});
 
 		// Action Listener for Save
+
 		save.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				final JFileChooser fc = new JFileChooser(Processing.getHomeDir());
+				fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				int returnVal = fc.showOpenDialog(NetPartPage.this);
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File dirselect = fc.getSelectedFile();
+					dir = dirselect.getAbsolutePath();
+					dir += Processing.getPathSep();
+				}
 				try {
-					if (dirchange == 0) {
-						Processing.saveDating(event);
-					} else {
-						Processing.saveDating(event, dir);
-					}
-					JOptionPane.showMessageDialog(ParticipantPage.this, "Saved successfully", "Success",
+					Processing.saveDating(event, dir);
+					JOptionPane.showMessageDialog(NetPartPage.this, "Saved successfully", "Success",
 							JOptionPane.INFORMATION_MESSAGE);
 				} catch (Exception ex) {
-					JOptionPane.showMessageDialog(ParticipantPage.this, ex.getMessage(), "ERROR",
+					JOptionPane.showMessageDialog(NetPartPage.this, ex.getMessage(), "ERROR",
 							JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -162,6 +216,8 @@ public class ParticipantPage extends JFrame {
 		 * gbc.gridx = 0; gbc.gridy = 1; panel.add(subtitle, gbc);
 		 * 
 		 * gbc.gridx = 0; gbc.gridy = 2; panel.add(sep, gbc);
+		 * 
+		 * gbc.gridx = 0; gbc.gridy = 3; panel.add(info, gbc);
 		 * 
 		 * gbc.gridx = 0; gbc.gridy = 4; gbc.insets = new Insets(10,0,0,0);
 		 * panel.add(actionPanel, gbc);
@@ -187,7 +243,7 @@ public class ParticipantPage extends JFrame {
 				GridBagConstraints.CENTER, GridBagConstraints.VERTICAL, new Insets(200, 0, 100, 0), 0, 0));
 
 		panel.add(pagePanel, new GridBagConstraints(0, 4, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
-				GridBagConstraints.CENTER, GridBagConstraints.VERTICAL, new Insets(130, 0, 50, 0), 0, 0));
+				GridBagConstraints.CENTER, GridBagConstraints.VERTICAL, new Insets(100, 0, 50, 0), 0, 0));
 
 		this.pack();
 		this.setVisible(true);
@@ -201,16 +257,5 @@ public class ParticipantPage extends JFrame {
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 	}
-
-	// public static void main(String[] args) {
-	//
-	// ParticipantPage ppage = new ParticipantPage();
-	// ppage.pack();
-	// ppage.setVisible(true);
-	// ppage.setTitle("SpeedDating - MatchFinder");
-	// ppage.setSize(1000, 900);
-	// ppage.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	//
-	// }
 
 }

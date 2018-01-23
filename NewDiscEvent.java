@@ -7,42 +7,31 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Arrays;
 
-public class EditWindow extends JFrame {
+public class NewDiscEvent extends JFrame {
 
-	private Dating d;
-	private String dir;
-	private String filename;
 	private int dirchange;
+	private String dir;
+	private String[] eventarr;
+	private DBConnect data;
+	private ServerConfig sc;
 
-	public EditWindow(String fname, String path, int dchng) {
-		this.filename = fname;
-		this.dir = path;
-		this.dirchange = dchng;
-		try {
-			if (this.dirchange == 1) {
-				this.d = (Dating) Processing.readDating(this.dir + this.filename);
-			} else {
-				this.d = (Dating) Processing.readDatingFromWD(this.filename);
-			}
-		} catch (Exception e) {
-			JOptionPane.showMessageDialog(EditWindow.this, "Error: " + e.getMessage(), "ERROR",
-					JOptionPane.ERROR_MESSAGE);
-		}
+	public NewDiscEvent(DBConnect d, ServerConfig s) {
+		this.data = d;
+		this.sc = s;
 		initGUI();
-
 	}
 
 	public void initGUI() {
 		JPanel panel = new JPanel(new GridBagLayout());
-		panel.setOpaque(false);
 		this.getContentPane().add(panel);
+		panel.setOpaque(false);
 		this.getContentPane().setBackground(new Color(255, 229, 204));
 	    setExtendedState(JFrame.MAXIMIZED_BOTH);
 
 		// Title
-		JLabel title = new JLabel("Edit an Existing Speeddating Event");
+		JLabel title = new JLabel("Create new speeddating event");
 		title.setForeground(new Color(250, 92, 92));
-		title.setFont(new Font("Arial", Font.BOLD, 40));
+		title.setFont(new Font("Arial", Font.BOLD, 30));
 
 		// Seperator
 		JSeparator sep = new JSeparator();
@@ -57,9 +46,13 @@ public class EditWindow extends JFrame {
 		maxpart.setForeground(new Color(250, 92, 92));
 		maxpart.setFont(new Font("Arial", Font.PLAIN, 15));
 
-		JLabel maxlike = new JLabel("Max. Number of Likes");
+		JLabel maxlike = new JLabel("Max. Mumber of Likes");
 		maxlike.setForeground(new Color(250, 92, 92));
 		maxlike.setFont(new Font("Arial", Font.PLAIN, 15));
+
+		JLabel maxdisc = new JLabel("Number of Discussion Partners");
+		maxdisc.setForeground(new Color(250, 92, 92));
+		maxdisc.setFont(new Font("Arial", Font.PLAIN, 15));
 
 		JLabel gender1 = new JLabel("Gender");
 		gender1.setForeground(new Color(250, 92, 92));
@@ -74,16 +67,27 @@ public class EditWindow extends JFrame {
 		gender2.setFont(new Font("Arial", Font.PLAIN, 15));
 
 		// Text Fields
-		JTextField namebox = new JTextField(d.getName());
+		JTextField namebox = new JTextField();
+		namebox.setForeground(new Color(250, 92, 92));
+		namebox.setFont(new Font("Arial", Font.PLAIN, 15));
 		namebox.setColumns(15);
-		namebox.setEditable(false);
-		JTextField maxpartbox = new JTextField(Integer.toString(d.getMaxPart()));
-		JTextField maxlikebox = new JTextField(Integer.toString(d.getMaxMatch()));
+
+		JTextField maxpartbox = new JTextField();
+		maxpartbox.setForeground(new Color(250, 92, 92));
+		maxpartbox.setFont(new Font("Arial", Font.PLAIN, 15));
+
+		JTextField maxlikebox = new JTextField();
+		maxlikebox.setForeground(new Color(250, 92, 92));
+		maxlikebox.setFont(new Font("Arial", Font.PLAIN, 15));
+
+		JTextField maxdiscbox = new JTextField();
+		maxdiscbox.setForeground(new Color(250, 92, 92));
+		maxdiscbox.setFont(new Font("Arial", Font.PLAIN, 15));
 
 		// Combo Boxes
 		String[] genders = { "male", "female", "other", "all" };
 		JComboBox<String> gen1 = new JComboBox<String>(genders);
-		gen1.setSelectedIndex(d.getGender()[0]);
+		gen1.setForeground(new Color(250, 92, 92));
 		gen1.setRenderer(new DefaultListCellRenderer() {
 			public void paint(Graphics g) {
 				setBackground(Color.WHITE);
@@ -92,7 +96,7 @@ public class EditWindow extends JFrame {
 		});
 
 		JComboBox<String> gen2 = new JComboBox<String>(genders);
-		gen2.setSelectedIndex(d.getGender()[1]);
+		gen2.setForeground(new Color(250, 92, 92));
 		gen2.setRenderer(new DefaultListCellRenderer() {
 			public void paint(Graphics g) {
 				setBackground(Color.WHITE);
@@ -106,8 +110,8 @@ public class EditWindow extends JFrame {
 		JButton disc = new JButton("Discard");
 		actionPanel.add(disc);
 
-		JButton save = new JButton("Save");
-		actionPanel.add(save);
+		JButton add = new JButton("Add");
+		actionPanel.add(add);
 
 		// Action listener
 		// Discard
@@ -118,40 +122,37 @@ public class EditWindow extends JFrame {
 
 		});
 
-		// ActionListener: Save
-		save.addActionListener(new ActionListener() {
+		// add button pressed to create new event
+		add.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent evt) {
 				int g1 = gen1.getSelectedIndex();
 				int g2 = gen2.getSelectedIndex();
-				int replace = 0;
+				int maxPart = Integer.parseInt(maxpartbox.getText());
+				int maxLikes = Integer.parseInt(maxlikebox.getText());
+				int maxDisc = Integer.parseInt(maxdiscbox.getText());
+				int replace = 1;
 				String name = namebox.getText(); // textfelder
-				int uinput = JOptionPane.showConfirmDialog(EditWindow.this,
-						"Are you sure you want to save the changes?", "Confirm Changes",
-						JOptionPane.INFORMATION_MESSAGE);
-				if (uinput == JOptionPane.YES_OPTION) {
-					replace = 1;
-				}
-				if (replace == 1) {
-					try {
-						int maxPart = Integer.parseInt(maxpartbox.getText());
-						int maxLikes = Integer.parseInt(maxlikebox.getText());
-						final Dating event = new Dating(maxPart, maxLikes, name, g1, g2);// initialisiert neues event
-						if (dirchange == 1) {
-							Processing.saveDating(event, dir);
-						} else {
-							Processing.saveDating(event);
-						}
-						dispose();
-					} catch (MatchException e) {
-						JOptionPane.showMessageDialog(EditWindow.this, e.getMessage(), "ERROR",
-								JOptionPane.ERROR_MESSAGE);
-					} catch (NumberFormatException e) {
-						JOptionPane.showMessageDialog(EditWindow.this, "Not a Number " + e.getMessage(), "ERROR",
-								JOptionPane.ERROR_MESSAGE);
+				data.setEventname(name);
+				if (!data.eventExists()) {
+					data.createEventTable();
+				} else {
+					int uinput = JOptionPane.showConfirmDialog(NewDiscEvent.this,
+							"The name is already taken. Do you want to replace the file?", "Info",
+							JOptionPane.INFORMATION_MESSAGE);
+					if (uinput != JOptionPane.YES_OPTION) {
+						replace = 0;
+					}
+					if (replace == 1) {
+						data.delete();
+						data.createEventTable();
 					}
 				}
-				// NewParticipantWindow.setVisible(true);
 
+				final Dating event = new Dating(maxPart, maxLikes, name, g1, g2, maxDisc);
+				data.storeInDB(event);
+				sc.setArr(data);
+				sc.refreshList();
+				dispose();
 			}
 		});
 
@@ -182,6 +183,12 @@ public class EditWindow extends JFrame {
 		 * gbc.gridx = 0; gbc.gridy = i; panel.add(maxpart,gbc);
 		 * 
 		 * gbc. gridx = 2; gbc.gridy = i; panel.add(maxpartbox, gbc);
+		 * 
+		 * i++;
+		 * 
+		 * gbc.gridx = 0; gbc.gridy = i; panel.add(maxdisc,gbc);
+		 * 
+		 * gbc. gridx = 2; gbc.gridy = i; panel.add(maxdiscbox, gbc);
 		 * 
 		 * i++;
 		 * 
@@ -226,23 +233,29 @@ public class EditWindow extends JFrame {
 		panel.add(maxpartbox, new GridBagConstraints(0, 7, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
 				GridBagConstraints.PAGE_START, GridBagConstraints.BOTH, new Insets(0, 0, 20, 0), 0, 0));
 
-		panel.add(gender1, new GridBagConstraints(0, 8, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
+		panel.add(maxdisc, new GridBagConstraints(0, 8, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
 				GridBagConstraints.PAGE_START, GridBagConstraints.BOTH, new Insets(20, 0, 0, 0), 0, 0));
 
-		panel.add(gen1, new GridBagConstraints(0, 9, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
+		panel.add(maxdiscbox, new GridBagConstraints(0, 9, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
 				GridBagConstraints.PAGE_START, GridBagConstraints.BOTH, new Insets(0, 0, 20, 0), 0, 0));
 
-		panel.add(matches, new GridBagConstraints(0, 10, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
+		panel.add(gender1, new GridBagConstraints(0, 10, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
+				GridBagConstraints.PAGE_START, GridBagConstraints.BOTH, new Insets(20, 0, 0, 0), 0, 0));
+
+		panel.add(gen1, new GridBagConstraints(0, 11, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
+				GridBagConstraints.PAGE_START, GridBagConstraints.BOTH, new Insets(0, 0, 20, 0), 0, 0));
+
+		panel.add(matches, new GridBagConstraints(0, 12, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
 				GridBagConstraints.PAGE_START, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
 
-		panel.add(gender2, new GridBagConstraints(0, 11, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
+		panel.add(gender2, new GridBagConstraints(0, 13, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
 				GridBagConstraints.PAGE_START, GridBagConstraints.BOTH, new Insets(20, 0, 0, 0), 0, 0));
 
-		panel.add(gen2, new GridBagConstraints(0, 12, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
+		panel.add(gen2, new GridBagConstraints(0, 14, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
 				GridBagConstraints.PAGE_START, GridBagConstraints.BOTH, new Insets(0, 0, 20, 0), 0, 0));
 
-		panel.add(actionPanel, new GridBagConstraints(0, 13, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
-				GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(50, 0, 20, 0), 0, 0));
+		panel.add(actionPanel, new GridBagConstraints(0, 15, GridBagConstraints.REMAINDER, 1, 0.0, 0.0,
+				GridBagConstraints.SOUTHEAST, GridBagConstraints.BOTH, new Insets(50, 0, 20, 0), 0, 0));
 
 		this.pack();
 		this.setVisible(true);
