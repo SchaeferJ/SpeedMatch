@@ -12,8 +12,8 @@ public class DBConnect {
 
 	private Connection con;
 	private String event;
-	private String username = "speedmatch";
-	private String password = "loveisintheair!";
+	private String username = "****"; //Enter username here
+	private String password = "*****"; //Enter password here
 	private String tmpdir = System.getProperty("java.io.tmpdir")+Processing.getPathSep();
 
 	public DBConnect(String eventname) {
